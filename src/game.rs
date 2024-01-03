@@ -1,182 +1,62 @@
-use std::fmt::{Debug, Display};
+use std::fmt::Debug;
+use std::str::FromStr;
 
+use chess::{Game, Square, Piece, ChessMove, Rank};
 use ratatui::style::Color;
 use ratatui::widgets::StatefulWidget;
 use ratatui::style::{Styled, Style};
 use ratatui::prelude::{Rect, Buffer};
 
-// Custom Piece Type Data
+struct MyPiece(Piece);
 
-#[derive(Debug, PartialEq, Copy, Clone)]
-pub enum PieceColor {
-    Black,
-    White,
-}
-
-impl PieceColor {
-    pub fn swap(&self) -> PieceColor {
-        match self {
-            PieceColor::White => PieceColor::Black,
-            PieceColor::Black => PieceColor::White,
-        }
-    }
-}
-
-#[derive(Debug, Default, Copy, Clone, PartialEq)]
-pub struct PawnData {
-    pub has_moved: bool,
-    pub can_en_pessant: bool,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum PieceType {
-    Pawn(PawnData),
-    Rook(bool),
-    King(bool),
-    Bishop,
-    Knight,
-    Queen,
-}
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Coordinates(pub u8, pub u8);
-
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Piece {
-    pub piece_type: PieceType,
-    pub color: PieceColor,
-}
-
-// Custom Piece Type Traits
-
-impl Display for Piece {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let letter: char = if self.color == PieceColor::White {
-            match &self.piece_type {
-                PieceType::Pawn(_) => {
-                    '󰡙'
-                },
-                PieceType::Rook(_) => {
-                    '󰡛'
-                },
-                PieceType::King(_) => {
-                    '󰡗'
-                },
-                PieceType::Bishop => {
-                    '󰡜'
-                },
-                PieceType::Knight => {
-                    '󰡘'
-                },
-                PieceType::Queen =>
-                    '󰡚'
-            }
-        } else {
-            match &self.piece_type {
-                PieceType::Pawn(_) => {
-                    ''
-                },
-                PieceType::Rook(_) => {
-                    ''
-                },
-                PieceType::King(_) => {
-                    ''
-                },
-                PieceType::Bishop => {
-                    ''
-                },
-                PieceType::Knight => {
-                    ''
-                },
-                PieceType::Queen =>
-                    ''
-            }
-        };
-        write!(f, "{letter}")
-    }
-}
-
-impl Piece {
+impl MyPiece {
     fn char(&self) -> char {
-        self.to_string().chars().nth(0).unwrap()
-    }
-}
-
-impl Display for PieceColor {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            PieceColor::Black => {
-                write!(f, "Black")
-            },
-            PieceColor::White => {
-                write!(f, "White")
-            },
+        match self.0 {
+            Piece::Pawn   => '󰡙',
+            Piece::King   => '󰡗',
+            Piece::Queen  => '󰡚',
+            Piece::Knight => '󰡘',
+            Piece::Bishop => '󰡜',
+            Piece::Rook   => '󰡛',
         }
     }
 }
 
-#[derive(Debug, Clone, Copy)]
-pub struct Board {
-    pub board: [[Option<Piece>; 8]; 8],
-    pub style: Style,
+#[derive(Debug, Clone)]
+pub struct MyGame(pub Game);
+
+impl Default for MyGame {
+    fn default() -> Self {
+        MyGame(Game::new())
+    }
 }
 
-impl Default for Board {
-    fn default() -> Self {
-        let black_pawn = Piece { piece_type: PieceType::Pawn(PawnData { has_moved: false, can_en_pessant: false }), color: PieceColor::Black };
-        let black_rook = Piece { piece_type: PieceType::Rook(false), color: PieceColor::Black };
-        let black_king = Piece { piece_type: PieceType::King(false), color: PieceColor::Black };
-        let black_bishop = Piece { piece_type: PieceType::Bishop, color: PieceColor::Black };
-        let black_knight = Piece { piece_type: PieceType::Knight, color: PieceColor::Black };
-        let black_queen = Piece { piece_type: PieceType::Queen, color: PieceColor::Black };
-        let white_pawn = Piece { piece_type: PieceType::Pawn(PawnData { has_moved: false, can_en_pessant: false }), color: PieceColor::White };
-        let white_rook = Piece { piece_type: PieceType::Rook(false), color: PieceColor::White };
-        let white_king = Piece { piece_type: PieceType::King(false), color: PieceColor::White };
-        let white_bishop = Piece { piece_type: PieceType::Bishop, color: PieceColor::White };
-        let white_knight = Piece { piece_type: PieceType::Knight, color: PieceColor::White };
-        let white_queen = Piece { piece_type: PieceType::Queen, color: PieceColor::White };
-        Board { board: [
-                [Some(black_rook), Some(black_knight), Some(black_bishop), Some(black_queen), Some(black_king), Some(black_bishop), Some(black_knight), Some(black_rook)],
-                [Some(black_pawn), Some(black_pawn), Some(black_pawn), Some(black_pawn), Some(black_pawn), Some(black_pawn), Some(black_pawn), Some(black_pawn)],
-                [None, None, None, None, None, None, None, None],
-                [None, None, None, None, None, None, None, None],
-                [None, None, None, None, None, None, None, None],
-                [None, None, None, None, None, None, None, None],
-                [Some(white_pawn), Some(white_pawn), Some(white_pawn), Some(white_pawn), Some(white_pawn), Some(white_pawn), Some(white_pawn), Some(white_pawn)],
-                [Some(white_rook), Some(white_knight), Some(white_bishop), Some(white_queen), Some(white_king), Some(white_bishop), Some(white_knight), Some(white_rook)],
-            ],
-            style: Style::default()
+#[derive(Debug, Default, Clone, Copy)]
+pub struct MyGameState {
+    pub selected: Option<(u16, u16)>
+}
+
+impl MyGameState {
+    pub fn to_chess_notation(&self) -> Option<String> {
+        match self.selected {
+            None => None,
+            Some((rank, file)) => {
+                Some(format!("{}{}",char::from_u32(file as u32 + 97).unwrap(),8-rank))
+            } 
         }
     }
 }
 
-impl Board {
-    pub fn selected_moves(&self, state: BoardState) -> Vec<Coordinates> {
-        vec![Coordinates(3,2),Coordinates(4,6),Coordinates(0,1)]
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct BoardState(pub u8, pub u8);
-
-impl Default for BoardState {
-    fn default() -> Self {
-        BoardState(0, 0)
-    }
-}
-
-impl StatefulWidget for Board {
-    type State = BoardState;
+impl StatefulWidget for MyGame {
+    type State = MyGameState;
 
     fn render(self, area: Rect, buf: &mut Buffer, state: &mut Self::State) {
         if area.width < 40 || area.height < 24 {
             return;
-        } else if state.0 > 7 || state.1 > 7 {
-            return;
         }
 
-        let offset_x = ((area.width - 40)/2) + area.x;
-        let offset_y = ((area.height - 24)/2) + area.y;
+        let offset_x = ((area.width - 40) / 2) + area.x;
+        let offset_y = ((area.height - 24) / 2) + area.y;
 
         for i in 0..8 {
             for j in 0..8 {
@@ -193,48 +73,127 @@ impl StatefulWidget for Board {
             }
         }
 
-        for (y, row) in self.board.iter().enumerate() {
-            for (x, space) in row.iter().enumerate() {
-                if let Some(piece) = space {
-                    let fg_color = if let PieceColor::White = piece.color {
+        for (rank, y) in (1..=8).rev().zip(0u16..) {
+            for (file, x) in ('a'..='h').zip(0u16..) {
+                let pos = self.0.current_position();
+                let square = Square::from_str(&format!("{file}{rank}")[..]).unwrap();
+                if let Some(piece) = pos.piece_on(square) {
+                    let fg_color = if let chess::Color::White = pos.color_on(square).unwrap() {
                         Color::White
                     } else {
                         Color::Black
                     };
-                    buf.get_mut(offset_x+(5*x as u16)+2, offset_y+(3*y as u16)+1).set_char(piece.char()).set_fg(fg_color);
+                    buf.get_mut(offset_x+(5*x)+2, offset_y+(3*y)+1).set_fg(fg_color).set_char(MyPiece(piece).char());
                 }
             }
         }
 
-        // Render selected piece
-
-        for k in 0..5 {
-           for l in 0..3 {
-               buf.get_mut(offset_x+5*state.1 as u16+k, offset_y+3*state.0 as u16+l).set_bg(Color::Red);
-           }
+        if let Some((y, x)) = state.selected {
+            for i in 0..5 {
+                for j in 0..3 {
+                    buf.get_mut(offset_x+(5*x)+i, offset_y+(3*y)+j).set_bg(Color::Rgb(0x33, 0xa0, 0x33));
+                }
+            }
         }
 
-        for Coordinates(y,x) in self.selected_moves(*state) {
-            let cell = buf.get_mut(offset_x+(5*x as u16)+2, offset_y+(3*y as u16)+1);
-            match &cell.symbol[..] {
-                " " => cell.set_char('⬤').set_fg(Color::Red),
-                _ => cell.set_fg(Color::Red),
-            };
+        if let Some(_) = state.selected {
+            for i in 0u8..8 {
+                for j in 0u8..8 {
+                    let int = 8 * (7 - i) + j;
+                    let end_square: Square;
+                    unsafe {
+                        end_square = Square::new(int);
+                    }
+                    let start_square = Square::from_str(&state.to_chess_notation().unwrap()[..]).unwrap();
+                    let chess_move = ChessMove::new(start_square, end_square, None);
+                    if self.0.current_position().legal(chess_move) {
+                        let buf_ref = buf.get_mut(offset_x+(5*j as u16)+2, offset_y+(3*i as u16)+1);
+                        if buf_ref.symbol == " ".to_owned() {
+                            buf_ref.set_char('⬤').set_fg(Color::Rgb(0x33, 0xa0, 0x33));
+                        } else {
+                            buf_ref.set_fg(Color::Rgb(0x33, 0xa0, 0x33));
+                        }
+                                        
+                    }
+                }
+            }
+            let selected_square = Square::from_str(&state.to_chess_notation().unwrap()[..]).unwrap();
+            if Some(Piece::Pawn) == self.0.current_position().piece_on(selected_square) {
+                let color = self.0.current_position().color_on(selected_square);
+                if let Some(color) = color {
+                    if color == chess::Color::Black && selected_square.get_rank() == Rank::Second {
+                        let square_1 = selected_square.down().unwrap();
+                        let square_2 = selected_square.down().unwrap().uright();
+                        let square_3 = selected_square.down().unwrap().uleft();
+                        let square_vec = vec![square_1, square_2, square_3];
+
+                        for (i, square) in square_vec.iter().enumerate() {
+                            if self.0.current_position().legal(ChessMove::new(selected_square, *square, Some(Piece::Queen))) {
+                                let offset_x = offset_x + (state.selected.unwrap().1 * 5);
+                                let offset_y = offset_y + (state.selected.unwrap().0 * 3) + 3;
+                                match i {
+                                    0 => {
+                                        buf.get_mut(offset_x + 1, offset_y).set_char('󰡚').set_fg(Color::Black);
+                                        buf.get_mut(offset_x + 3, offset_y).set_char('󰡛').set_fg(Color::Black);
+                                        buf.get_mut(offset_x + 1, offset_y + 2).set_char('󰡘').set_fg(Color::Black);
+                                        buf.get_mut(offset_x + 3, offset_y + 2).set_char('󰡜').set_fg(Color::Black);
+                                    },
+                                    1 => {
+                                        buf.get_mut(offset_x + 6, offset_y).set_char('󰡚').set_fg(Color::Black);
+                                        buf.get_mut(offset_x + 8, offset_y).set_char('󰡛').set_fg(Color::Black);
+                                        buf.get_mut(offset_x + 6, offset_y + 2).set_char('󰡘').set_fg(Color::Black);
+                                        buf.get_mut(offset_x + 8, offset_y + 2).set_char('󰡜').set_fg(Color::Black);
+                                    },
+                                    2 => {
+                                        buf.get_mut(offset_x -4, offset_y).set_char('󰡚').set_fg(Color::Black);
+                                        buf.get_mut(offset_x - 2, offset_y).set_char('󰡛').set_fg(Color::Black);
+                                        buf.get_mut(offset_x - 4, offset_y + 2).set_char('󰡘').set_fg(Color::Black);
+                                        buf.get_mut(offset_x - 2, offset_y + 2).set_char('󰡜').set_fg(Color::Black);
+                                    },
+                                    _ => (),
+                                }
+                            }
+                        }
+                    } else if color == chess::Color::White && selected_square.get_rank() == Rank::Seventh {
+                        let square_1 = selected_square.up().unwrap();
+                        let square_2 = selected_square.up().unwrap().uright();
+                        let square_3 = selected_square.up().unwrap().uleft();
+                        let square_vec = vec![square_1, square_2, square_3];
+
+                        for (i, square) in square_vec.iter().enumerate() {
+                            if self.0.current_position().legal(ChessMove::new(selected_square, *square, Some(Piece::Queen))) {
+                                let offset_x = offset_x + (state.selected.unwrap().1 * 5);
+                                let offset_y = offset_y + (state.selected.unwrap().0 * 3) - 3;
+                                match i {
+                                    0 => {
+                                        buf.get_mut(offset_x + 1, offset_y).set_char('󰡚').set_fg(Color::White);
+                                        buf.get_mut(offset_x + 3, offset_y).set_char('󰡛').set_fg(Color::White);
+                                        buf.get_mut(offset_x + 1, offset_y + 2).set_char('󰡘').set_fg(Color::White);
+                                        buf.get_mut(offset_x + 3, offset_y + 2).set_char('󰡜').set_fg(Color::White);
+                                    },
+                                    1 => {
+                                        buf.get_mut(offset_x + 6, offset_y).set_char('󰡚').set_fg(Color::White);
+                                        buf.get_mut(offset_x + 8, offset_y).set_char('󰡛').set_fg(Color::White);
+                                        buf.get_mut(offset_x + 6, offset_y + 2).set_char('󰡘').set_fg(Color::White);
+                                        buf.get_mut(offset_x + 8, offset_y + 2).set_char('󰡜').set_fg(Color::White);
+                                    },
+                                    2 => {
+                                        buf.get_mut(offset_x -4, offset_y).set_char('󰡚').set_fg(Color::White);
+                                        buf.get_mut(offset_x - 2, offset_y).set_char('󰡛').set_fg(Color::White);
+                                        buf.get_mut(offset_x - 4, offset_y + 2).set_char('󰡘').set_fg(Color::White);
+                                        buf.get_mut(offset_x - 2, offset_y + 2).set_char('󰡜').set_fg(Color::White);
+                                    },
+                                    _ => (),
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }
 
-impl Styled for Board {
-    type Item = Board;
-
-    fn style(&self) -> Style {
-        self.style
-    }
-
-    fn set_style(mut self, style: Style) -> Self::Item {
-        self.style = style;
-        self
-    }
+pub fn to_chess_notation(rank: u16, file: u16) -> String {
+    format!("{}{}",char::from_u32(file as u32 + 97).unwrap(),8-rank)
 }
-
-

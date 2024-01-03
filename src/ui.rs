@@ -26,7 +26,7 @@ pub fn render(app: &mut App, f: &mut Frame) {
         ])
         .split(layout[1]);
 
-    f.render_stateful_widget(app.board, cols[1], &mut app.board_state);
+    f.render_stateful_widget(app.game.clone(), cols[1], &mut app.game_state);
     //f.render_widget(Paragraph::new(vec![
     //        Line::from("Title"),
     //        Line::from("Horizontal Layout Example. Press q to quit"),

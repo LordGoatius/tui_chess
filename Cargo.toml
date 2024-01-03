@@ -1,5 +1,5 @@
 [package]
-name = "tui_chess"
+name = "tchess"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,5 +7,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.75"
+chess = "3.2.0"
 crossterm = "0.27.0"
 ratatui = "0.24.0"

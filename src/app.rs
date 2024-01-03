@@ -1,15 +1,15 @@
 use std::fmt::Debug;
 
-use crate::game::{Board, BoardState};
+use crate::game::{MyGame, MyGameState};
 
 #[derive(Debug, Default)]
 pub struct App {
     /// should the application exit?
     pub should_quit: bool,
     /// game board
-    pub board: Board,
+    pub game: MyGame,
     /// state
-    pub board_state: BoardState,
+    pub game_state: MyGameState,
 }
 
 impl App {
